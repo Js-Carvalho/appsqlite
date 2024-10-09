@@ -1,5 +1,5 @@
 import 'package:appsqlite/model/User.dart';
-import 'package:appsqlite/services/userService.dart';
+import 'package:appsqlite/services/UserService.dart';
 import 'package:flutter/material.dart';
 
 class EditUser extends StatefulWidget {
@@ -118,7 +118,7 @@ class _EditUserState extends State<EditUser> {
                           _user.name = _userNameController.text;
                           _user.contact = _userContactController.text;
                           _user.description = _userDescriptionController.text;
-                          var result = await _userService.UpdateUser(_user);
+                          var result = await _userService.updateUser(_user);
                           Navigator.pop(context, result);
                         }
                       },

@@ -63,6 +63,60 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
     cvvController.text = card.cvv!;
     expiryController.text = card.expiryDate!;
     editingCardId = card.id; // Set the ID for updating
+
+    _showEditDialog(card);
+  }
+
+  void _showEditDialog(CreditCard card) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Editar Cartão de Crédito'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration:
+                      const InputDecoration(labelText: 'Nome do Titular'),
+                ),
+                TextField(
+                  controller: numberController,
+                  decoration:
+                      const InputDecoration(labelText: 'Número do Cartão'),
+                ),
+                TextField(
+                  controller: cvvController,
+                  decoration: const InputDecoration(labelText: 'CVV'),
+                ),
+                TextField(
+                  controller: expiryController,
+                  decoration: const InputDecoration(
+                      labelText: 'Data de Vencimento (MM/AA)'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _addOrUpdateCard(); // Chama a função de adicionar ou atualizar
+                Navigator.of(context).pop(); // Fecha o diálogo
+              },
+              child: const Text('Salvar'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Fecha o diálogo
+              },
+              child: const Text('Cancelar'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _deleteCard(int id) async {
@@ -132,10 +186,18 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
                       subtitle: Text(
                           'Número: ${cards[index].cardNumber!}\nVencimento: ${cards[index].expiryDate!}'),
                       isThreeLine: true,
-                      onTap: () => _editCard(cards[index]),
-                      trailing: IconButton(
-                        icon: const Icon(Icons.delete, color: Colors.red),
-                        onPressed: () => _deleteCard(cards[index].id!),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.edit, color: Colors.teal),
+                            onPressed: () => _editCard(cards[index]),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.delete, color: Colors.red),
+                            onPressed: () => _deleteCard(cards[index].id!),
+                          ),
+                        ],
                       ),
                     ),
                   );

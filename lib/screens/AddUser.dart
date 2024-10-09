@@ -105,7 +105,7 @@ class _AddUserState extends State<AddUser> {
                           _user.name = _userNameController.text;
                           _user.contact = _userContactController.text;
                           _user.description = _userDescriptionController.text;
-                          var result = await _userService.SaveUser(_user);
+                          var result = await _userService.saveUser(_user);
                           Navigator.pop(context, result);
                         }
                       },

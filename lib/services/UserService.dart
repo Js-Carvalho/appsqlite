@@ -7,17 +7,26 @@ class UserService {
     _repository = Repository();
   }
   //Save User
-  SaveUser(User user) async {
+  saveUser(User user) async {
     return await _repository.insertData('users', user.userMap());
   }
 
   //Read All Users
-  readAllUsers() async {
-    return await _repository.readData('users');
+  Future<List<User>> readAllUsers() async {
+    var usersData = await _repository
+        .readData('users'); // Assume que isso retorna uma lista de mapas
+    return usersData.map<User>((user) {
+      return User(
+        id: user['id'], // Certifique-se de que 'id' existe no mapa
+        name: user['name'],
+        contact: user['contact'],
+        description: user['description'],
+      );
+    }).toList();
   }
 
   //Edit User
-  UpdateUser(User user) async {
+  updateUser(User user) async {
     return await _repository.updateData('users', user.userMap());
   }
 
