@@ -49,12 +49,17 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
         ));
         editingCardId = null; // Reset after update
       }
-      nameController.clear();
-      numberController.clear();
-      cvvController.clear();
-      expiryController.clear();
+      _clearFields();
       _loadCards();
     }
+  }
+
+  void _clearFields() {
+    nameController.clear();
+    numberController.clear();
+    cvvController.clear();
+    expiryController.clear();
+    editingCardId = null; // Reset the editing ID
   }
 
   void _editCard(CreditCard card) {
@@ -139,7 +144,7 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(height: 10),
+            const SizedBox(height: 10),
             TextField(
               controller: numberController,
               decoration: const InputDecoration(
@@ -174,23 +179,47 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
                 backgroundColor: Colors.teal,
               ),
             ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _clearFields,
+              child: const Text('Limpar Campos'),
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(double.infinity, 50),
+                backgroundColor: Colors.grey,
+              ),
+            ),
             const SizedBox(height: 20),
             Expanded(
               child: ListView.builder(
                 itemCount: cards.length,
                 itemBuilder: (context, index) {
-                  return Card(
-                    margin: EdgeInsets.symmetric(vertical: 8.0),
+                  return Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8.0),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [
+                          Colors.blue,
+                          Colors.pink
+                        ], // Cores do gradiente
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius:
+                          BorderRadius.circular(12), // Bordas arredondadas
+                    ),
                     child: ListTile(
-                      title: Text(cards[index].cardHolderName!),
+                      title: Text(cards[index].cardNumber!,
+                          style: const TextStyle(color: Colors.white)),
                       subtitle: Text(
-                          'Número: ${cards[index].cardNumber!}\nVencimento: ${cards[index].expiryDate!}'),
+                        '${cards[index].expiryDate!}         ${cards[index].cvv!}\n${cards[index].cardHolderName!}',
+                        style: const TextStyle(color: Colors.white70),
+                      ),
                       isThreeLine: true,
                       trailing: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.teal),
+                            icon: const Icon(Icons.edit, color: Colors.white),
                             onPressed: () => _editCard(cards[index]),
                           ),
                           IconButton(
