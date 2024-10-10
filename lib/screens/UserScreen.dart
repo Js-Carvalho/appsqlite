@@ -44,11 +44,15 @@ class _UserScreenState extends State<UserScreen> {
         description: _userDescriptionController.text,
       );
       await _userService.saveUser(user);
-      _userNameController.clear();
-      _userContactController.clear();
-      _userDescriptionController.clear();
+      _clearFields(); // Limpa os campos após adicionar o usuário
       await _getAllUsers();
     }
+  }
+
+  void _clearFields() {
+    _userNameController.clear();
+    _userContactController.clear();
+    _userDescriptionController.clear();
   }
 
   Future<void> _editUser(User user) async {
@@ -108,6 +112,35 @@ class _UserScreenState extends State<UserScreen> {
     }
   }
 
+  void _showDeleteConfirmation(int userId) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar Exclusão'),
+          content:
+              const Text('Você tem certeza que deseja excluir este usuário?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _deleteUser(userId);
+                Navigator.of(context).pop(); // Fecha o diálogo
+              },
+              child: const Text('Confirmar'),
+            ),
+            TextButton(
+              onPressed: () {
+                _clearFields();
+                Navigator.of(context).pop(); // Fecha o diálogo
+              },
+              child: const Text('Cancelar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _deleteUser(int userId) async {
     await _userService.deleteUser(userId);
     await _getAllUsers();
@@ -143,7 +176,18 @@ class _UserScreenState extends State<UserScreen> {
               onPressed: _addUser,
               child: const Text('Adicionar Usuário'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
+                backgroundColor: const Color.fromARGB(255, 32, 145, 250),
+                foregroundColor: Colors.white,
+                minimumSize: const Size(double.infinity, 50), // Full width
+              ),
+            ),
+            const SizedBox(height: 10),
+            ElevatedButton(
+              onPressed: _clearFields,
+              child: const Text('Limpar Campos'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey,
+                foregroundColor: Colors.white,
                 minimumSize: const Size(double.infinity, 50), // Full width
               ),
             ),
@@ -167,7 +211,8 @@ class _UserScreenState extends State<UserScreen> {
                           ),
                           IconButton(
                             icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteUser(_userList[index].id!),
+                            onPressed: () =>
+                                _showDeleteConfirmation(_userList[index].id!),
                           ),
                         ],
                       ),

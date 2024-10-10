@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart'; // Import necessário para TextInputFormatter
 import '../model/creditCard.dart';
 import '../db_helper/credit_card.dart';
 
@@ -28,30 +29,51 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
   }
 
   void _addOrUpdateCard() async {
-    if (nameController.text.isNotEmpty &&
-        numberController.text.isNotEmpty &&
-        cvvController.text.isNotEmpty &&
-        expiryController.text.isNotEmpty) {
-      if (editingCardId == null) {
-        await dbHelper.insertCard(CreditCard(
-          cardHolderName: nameController.text,
-          cardNumber: numberController.text,
-          cvv: cvvController.text,
-          expiryDate: expiryController.text,
-        ));
-      } else {
-        await dbHelper.updateCard(CreditCard(
-          id: editingCardId,
-          cardHolderName: nameController.text,
-          cardNumber: numberController.text,
-          cvv: cvvController.text,
-          expiryDate: expiryController.text,
-        ));
-        editingCardId = null; // Reset after update
-      }
-      _clearFields();
-      _loadCards();
+    String name = nameController.text;
+    String number = numberController.text; // Mantém os espaços
+    String cvv = cvvController.text;
+    String expiry = expiryController.text;
+
+    // Validação dos campos
+    if (name.isEmpty) {
+      _showErrorDialog('Nome do Titular não pode estar vazio.');
+      return;
     }
+    if (number.isEmpty || !RegExp(r"^(\d{4} ){3}\d{4}$").hasMatch(number)) {
+      _showErrorDialog(
+          'Número do Cartão deve ter 16 dígitos, incluindo espaços.');
+      return;
+    }
+    if (cvv.isEmpty || !RegExp(r"^\d{3,4}$").hasMatch(cvv)) {
+      _showErrorDialog('CVV deve ter 3 ou 4 dígitos.');
+      return;
+    }
+    if (expiry.isEmpty ||
+        !RegExp(r"^(0[1-9]|1[0-2])\/\d{2}$").hasMatch(expiry)) {
+      _showErrorDialog('Data de Vencimento deve estar no formato MM/AA.');
+      return;
+    }
+
+    // Se todas as validações passarem, prossiga para adicionar ou atualizar
+    if (editingCardId == null) {
+      await dbHelper.insertCard(CreditCard(
+        cardHolderName: name,
+        cardNumber: number,
+        cvv: cvv,
+        expiryDate: expiry,
+      ));
+    } else {
+      await dbHelper.updateCard(CreditCard(
+        id: editingCardId,
+        cardHolderName: name,
+        cardNumber: number,
+        cvv: cvv,
+        expiryDate: expiry,
+      ));
+      editingCardId = null; // Reset after update
+    }
+    _clearFields();
+    _loadCards();
   }
 
   void _clearFields() {
@@ -89,6 +111,9 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
                 ),
                 TextField(
                   controller: numberController,
+                  inputFormatters: [
+                    CardNumberInputFormatter()
+                  ], // Formatação do número do cartão
                   decoration:
                       const InputDecoration(labelText: 'Número do Cartão'),
                 ),
@@ -124,9 +149,58 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
     );
   }
 
+  void _showDeleteConfirmation(int id) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Confirmar Exclusão'),
+          content:
+              const Text('Você tem certeza que deseja excluir este cartão?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                _deleteCard(id);
+                Navigator.of(context).pop(); // Fecha o diálogo
+              },
+              child: const Text('Confirmar'),
+            ),
+            TextButton(
+              onPressed: () {
+                _clearFields();
+                Navigator.of(context).pop(); // Fecha o diálogo
+              },
+              child: const Text('Cancelar'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   void _deleteCard(int id) async {
     await dbHelper.deleteCard(id);
     _loadCards();
+  }
+
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Erro'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Fecha o diálogo
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -147,6 +221,9 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
             const SizedBox(height: 10),
             TextField(
               controller: numberController,
+              inputFormatters: [
+                CardNumberInputFormatter()
+              ], // Formatação do número do cartão
               decoration: const InputDecoration(
                 labelText: 'Número do Cartão',
                 border: OutlineInputBorder(),
@@ -176,7 +253,8 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
                   : 'Atualizar Cartão'),
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
-                backgroundColor: Colors.teal,
+                backgroundColor: const Color.fromARGB(255, 32, 145, 250),
+                foregroundColor: Colors.white,
               ),
             ),
             const SizedBox(height: 10),
@@ -186,6 +264,7 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
               style: ElevatedButton.styleFrom(
                 minimumSize: const Size(double.infinity, 50),
                 backgroundColor: Colors.grey,
+                foregroundColor: Colors.white, // Cor do texto do botão
               ),
             ),
             const SizedBox(height: 20),
@@ -197,37 +276,50 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
                     margin: const EdgeInsets.symmetric(vertical: 8.0),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [
-                          Colors.blue,
-                          Colors.pink
-                        ], // Cores do gradiente
+                        colors: [Colors.blue, Colors.pink],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
-                      borderRadius:
-                          BorderRadius.circular(12), // Bordas arredondadas
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: ListTile(
-                      title: Text(cards[index].cardNumber!,
-                          style: const TextStyle(color: Colors.white)),
-                      subtitle: Text(
-                        '${cards[index].expiryDate!}         ${cards[index].cvv!}\n${cards[index].cardHolderName!}',
-                        style: const TextStyle(color: Colors.white70),
-                      ),
-                      isThreeLine: true,
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.white),
-                            onPressed: () => _editCard(cards[index]),
+                    child: Column(
+                      children: [
+                        ListTile(
+                          title: Text(cards[index].cardNumber!,
+                              style: const TextStyle(color: Colors.white)),
+                          subtitle: Text(
+                            '${cards[index].expiryDate!}         ${cards[index].cvv!}\n${cards[index].cardHolderName!}',
+                            style: const TextStyle(color: Colors.white70),
                           ),
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () => _deleteCard(cards[index].id!),
+                          isThreeLine: true,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon:
+                                    const Icon(Icons.edit, color: Colors.white),
+                                onPressed: () => _editCard(cards[index]),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete,
+                                    color: Colors.white),
+                                onPressed: () =>
+                                    _showDeleteConfirmation(cards[index].id!),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
+                        ),
+                        // Adicionando a imagem abaixo dos botões
+                        Align(
+                          alignment: Alignment.centerRight, // Alinha à direita
+                          child: Image.asset(
+                            'assets/mastercard.png', // Caminho da sua imagem
+                            height: 60, // Ajuste a altura conforme necessário
+                            fit: BoxFit
+                                .cover, // Ajusta a imagem para caber no espaço
+                          ),
+                        ),
+                      ],
                     ),
                   );
                 },
@@ -236,6 +328,29 @@ class _CreditCardScreenState extends State<CreditCardScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+// Classe para formatar o número do cartão
+class CardNumberInputFormatter extends TextInputFormatter {
+  @override
+  TextEditingValue formatEditUpdate(
+      TextEditingValue oldValue, TextEditingValue newValue) {
+    String newText = newValue.text.replaceAll(' ', '');
+    if (newText.length > 16) {
+      newText = newText.substring(0, 16); // Limita a 16 dígitos
+    }
+    StringBuffer buffer = StringBuffer();
+    for (int i = 0; i < newText.length; i++) {
+      if (i > 0 && i % 4 == 0) {
+        buffer.write(' '); // Adiciona espaço a cada 4 dígitos
+      }
+      buffer.write(newText[i]);
+    }
+    return TextEditingValue(
+      text: buffer.toString(),
+      selection: TextSelection.collapsed(offset: buffer.length),
     );
   }
 }
